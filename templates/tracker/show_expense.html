@@ -1,0 +1,31 @@
+<table>
+    <tr>
+        <td>Type</td>
+        <td>{{ e.type }}</td>
+    </tr>
+    <tr>
+        <td>Description</td>
+        <td>{{ e.desc }}
+    </tr>
+    <tr>
+        <td>Amount</td>
+        <td>{{ e.amount }}</td>
+    </tr>
+    <tr>
+        <td>Issue Date</td>
+        <td>{{ e.issue_date }}</td>
+    </tr>
+    <tr>
+        <td>Added By</td>
+        <td>{{ e.added_by }}
+    <tr>
+</table>
+Breakdown
+<table>
+{% for bill in e.bills.choice_set.all %}
+    <tr>
+        <td>{{ bill.applies_to }}</td>
+        <td>{{ bill.amount }}</td>
+    </tr>
+{% endfor %}
+</table>

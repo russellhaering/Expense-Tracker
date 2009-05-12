@@ -1,0 +1,9 @@
+{% if expense_list %}
+    <ul>
+    {% for expense in expense_list %}
+        <li>{{ expense.desc }}</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No expenses are available.</p>
+{% endif %}
