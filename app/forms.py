@@ -10,6 +10,9 @@ class BillValue(object):
         self.value = value
         self.name = name
 
+    def __repr__(self):
+        return str((self.name, self.value))
+
     def __unicode__(self):
         return self.value
 
@@ -22,9 +25,9 @@ class BillerWidget(forms.MultiWidget):
 
     def value_from_datadict(self, data, files, name):
         return [(BillValue(
-            (name + '_%s' % self.victims[i].id),
-            (widget.value_from_datadict(data, files, name + '_%s' % self.victims[i].id))
-        )) for i, widget in enumerate(self.widgets)]
+            (name + '_%s' % victim.id),
+            (data.get(name + '_%s' % victim.id))
+        )) for victim in self.victims]
 
     def decompress(self, values):
         if values:
@@ -60,13 +63,9 @@ class BillerWidget(forms.MultiWidget):
 # Fields
 class BillerField(forms.RegexField):
     currencyRe = re.compile(r'^[0-9]{1,5}(.[0-9][0-9])?$')
-    error_messages = {
-        'invalid': u'Enter a valid USD amount',
-    }
     def __init__(self, victims):
-        self.victims = victims
         self.widget = BillerWidget(victims)
-        super(BillerField, self).__init__(self.currencyRe, error_messages=self.error_messages)
+        super(BillerField, self).__init__(self.currencyRe)
 
     def _clean_value(self, value):
         value.value = float(super(BillerField, self).clean(value.value))
