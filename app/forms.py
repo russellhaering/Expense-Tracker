@@ -21,13 +21,34 @@ class BillerWidget(forms.MultiWidget):
         super(BillerWidget, self).__init__(widgets, attrs)
 
     def value_from_datadict(self, data, files, name):
-        return [BillValue(name + '_%s' % i, widget.value_from_datadict(data, files, name + '_%s' % i)) for i, widget in enumerate(self.widgets)]
+        return [(BillValue(
+            (name + '_%s' % self.victims[i].id),
+            (widget.value_from_datadict(data, files, name + '_%s' % self.victims[i].id))
+        )) for i, widget in enumerate(self.widgets)]
 
     def decompress(self, values):
         if values:
             return values
         else:
             return list((None) for widget in self.widgets)
+
+    def render(self, name, value, attrs=None):
+        # value is a list of values, each corresponding to a widget
+        # in self.widgets.
+        if not isinstance(value, list):
+            value = self.decompress(value)
+        output = []
+        final_attrs = self.build_attrs(attrs)
+        id_ = final_attrs.get('id', None)
+        for i, widget in enumerate(self.widgets):
+            try:
+                widget_value = value[i].value
+            except (IndexError, AttributeError):
+                widget_value = None
+            if id_:
+                final_attrs = dict(final_attrs, id='%s_%s' % (id_, i))
+            output.append(widget.render(name + "_%s" % self.victims[i].id, widget_value, final_attrs))
+        return self.format_output(output)
 
     def format_output(self, rendered_widgets):
         output = u'\n<table>\n'
