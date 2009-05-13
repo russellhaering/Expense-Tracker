@@ -4,12 +4,24 @@ import re
 from expenses.app.models import ExpenseType
 from django.contrib.auth.models import User
 
+# Random Utilities
+class BillValue(object):
+    def __init__(self, name, value):
+        self.value = value
+        self.name = name
+
+    def __unicode__(self):
+        return self.value
+
 # Widgets
 class BillerWidget(forms.MultiWidget):
-    def __init__(self, victims):
+    def __init__(self, victims, attrs=None):
         self.victims = victims
         widgets = ((forms.TextInput()) for victim in victims)
-        super(BillerWidget, self).__init__(widgets)
+        super(BillerWidget, self).__init__(widgets, attrs)
+
+    def value_from_datadict(self, data, files, name):
+        return [BillValue(name + '_%s' % i, widget.value_from_datadict(data, files, name + '_%s' % i)) for i, widget in enumerate(self.widgets)]
 
     def decompress(self, values):
         if values:
@@ -36,8 +48,8 @@ class BillerField(forms.RegexField):
         super(BillerField, self).__init__(self.currencyRe, error_messages=self.error_messages)
 
     def _clean_value(self, value):
-        value = super(BillerField, self).clean(value)
-        return float(value)
+        value.value = float(super(BillerField, self).clean(value.value))
+        return value
 
     def clean(self, values):
         errors = ErrorList()
@@ -45,10 +57,8 @@ class BillerField(forms.RegexField):
         for value in values:
             try:
                 cleaned_values.append(self._clean_value(value))
-            except ValidationError, e:
-                errors.extend(e.messages)
-        if errors:
-            raise ValidationError(u'Every field must contain a valid US Dollar amount')
+            except ValidationError:
+                raise ValidationError(u'Every field must contain a valid US Dollar amount')
         return cleaned_values
 
 # Forms
