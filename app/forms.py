@@ -1,7 +1,7 @@
+import re, decimal
 from django import forms
 from django.forms.util import ErrorList, ValidationError
-import re
-from expenses.app.models import ExpenseType
+from expenses.app.models import Expense, ExpenseType, MicroBill
 from django.contrib.auth.models import User
 
 # Random Utilities
@@ -25,7 +25,7 @@ class BillerWidget(forms.MultiWidget):
 
     def value_from_datadict(self, data, files, name):
         return [(BillValue(
-            (name + '_%s' % victim.id),
+            (victim.id),
             (data.get(name + '_%s' % victim.id))
         )) for victim in self.victims]
 
@@ -61,14 +61,25 @@ class BillerWidget(forms.MultiWidget):
 
 
 # Fields
+class CurrencyField(forms.RegexField):
+    currencyRe = re.compile(r'^[0-9]{1,5}(\.[0-9][0-9])?$')
+    error_messages = {
+        'invalid': u'Enter a valid US Dollar amount',
+    }
+    def __init__(self):
+        super(CurrencyField, self).__init__(self.currencyRe, error_messages=self.error_messages)
+
+    def clean(self, value):
+        return decimal.Decimal(super(CurrencyField, self).clean(value))
+
 class BillerField(forms.RegexField):
-    currencyRe = re.compile(r'^[0-9]{1,5}(.[0-9][0-9])?$')
+    currencyRe = re.compile(r'^[0-9]{1,5}(\.[0-9][0-9])?$')
     def __init__(self, victims):
         self.widget = BillerWidget(victims)
         super(BillerField, self).__init__(self.currencyRe)
 
     def _clean_value(self, value):
-        value.value = float(super(BillerField, self).clean(value.value))
+        value.value = decimal.Decimal(super(BillerField, self).clean(value.value))
         return value
 
     def clean(self, values):
@@ -84,11 +95,39 @@ class BillerField(forms.RegexField):
 # Forms
 class ExpenseForm(forms.Form):
     type = forms.ModelChoiceField(queryset=ExpenseType.objects.all())
-    desc = forms.CharField(max_length=128)
-    amount = forms.FloatField()
+    description = forms.CharField(max_length=128)
+    amount = CurrencyField()
     issue_date = forms.DateField()
     bills = BillerField(User.objects.all())
 
     def clean(self):
         print self.cleaned_data
+        try:
+            expected = self.cleaned_data['amount']
+            sum = 0
+            for bill in self.cleaned_data['bills']:
+                sum += bill.value
+            print sum
+            if sum != expected:
+                raise ValidationError('The bills to be sent must add to the total value of this bill')
+        except KeyError:
+            pass
         return self.cleaned_data
+
+    def save(self):
+        bills = []
+        for bill in self.cleaned_data['bills']:
+            new_bill = MicroBill(amount=bill.value, applies_to=User(id=int(bill.name)))
+            new_bill.save()
+            bills.append(new_bill)
+        e = Expense(
+            desc = self.cleaned_data['description'],
+            type = self.cleaned_data['type'],
+            issue_date = self.cleaned_data['issue_date'],
+            amount = self.cleaned_data['amount'],
+            added_by = User(id=1),
+        )
+        e.save()
+        e.bills = bills
+        e.save()
+        return e

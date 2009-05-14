@@ -1,9 +1,22 @@
 {% if expense_list %}
-    <ul>
+<table>
     {% for expense in expense_list %}
-        <li>{{ expense.desc }}</li>
+    <tr>
+        <th>{{ expense.desc }}</th>
+        <td>{{ expense.type }}</td>
+        <td>{{ expense.issue_date }}</td>
+        <td>{{ expense.added_by }}</td>
+        <td>{{ expense.amount }}</td>
+    </tr>
     {% endfor %}
-    </ul>
+    <tr>
+        <th><b>Sum</b></th>
+        <td \>
+        <td \>
+        <td \>
+        <td>{{ total_expenses }}</td>
+    </tr>
+</table>
 {% else %}
     <p>No expenses are available.</p>
 {% endif %}

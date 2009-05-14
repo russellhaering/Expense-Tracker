@@ -5,7 +5,7 @@
     </tr>
     <tr>
         <td>Description</td>
-        <td>{{ e.desc }}
+        <td>{{ e.desc }}</td>
     </tr>
     <tr>
         <td>Amount</td>
@@ -17,12 +17,12 @@
     </tr>
     <tr>
         <td>Added By</td>
-        <td>{{ e.added_by }}
+        <td>{{ e.added_by }}</td>
     <tr>
 </table>
 Breakdown
 <table>
-{% for bill in e.bills.choice_set.all %}
+{% for bill in e.bills.all %}
     <tr>
         <td>{{ bill.applies_to }}</td>
         <td>{{ bill.amount }}</td>
